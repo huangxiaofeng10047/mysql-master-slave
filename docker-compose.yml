@@ -3,6 +3,8 @@ services:
 
 
   mysql-master:
+    env_file:
+      - ./.env
     image: mysql:${MYSQL_VERSION}
     container_name: mysql-master
     ports:
@@ -12,12 +14,15 @@ services:
       - ${MYSQL_DATA_DIR}:/var/lib/mysql/:rw
     restart: always
     networks:
-      - default
+      mysql2master:
+            ipv4_address: 192.167.11.2
     environment:
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
       TZ: "$TZ"
 
   mysql-slave:
+    env_file:
+      - ./.env
     image: mysql:${MYSQL_VERSION}
     container_name: mysql-slave
     ports:
@@ -27,9 +32,13 @@ services:
       - ${MYSQL_SLAVE_DATA_DIR}:/var/lib/mysql/:rw
     restart: always
     networks:
-      - default
+      mysql2master:
+            ipv4_address: 192.167.11.3
     environment:
       MYSQL_ROOT_PASSWORD: "${MYSQL_SLAVE_ROOT_PASSWORD}"
       TZ: "$TZ"
 networks:
-  default:
+  mysql2master:
+     ipam:
+        config:
+          - subnet: ${MYSQL2MASTER_SUBNET}

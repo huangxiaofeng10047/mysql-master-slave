@@ -77,7 +77,8 @@ IP： 127.0.0.1 PORT: 33070 USER: root password: 123456
 ```
 
 # 创建复制用户
-create user 'repl'@'%' identified by '123456'
+create user 'repl'@'%' identified by '123456';
+
 # 授权赋值 复制权限
 grant replication slave,replication client on *.* to 'repl'@'%';
 # 刷新权限
@@ -166,12 +167,12 @@ mysql-slave: 172.29.0.2（从库，注意IP可能会变动）
 
 ```
 change master to 
-master_host='172.29.0.3',
+master_host='192.167.11.2',
 master_port=3309,
 master_user='repl',
 master_password='123456',
 master_log_file='mysql-bin.000001',
-master_log_pos=155,
+master_log_pos=156,
 get_master_public_key=1
 ;
 ```
@@ -278,3 +279,61 @@ Slave_SQL_Running: Yes
 中间可能会有坑，不会很顺利，端口号各种问题
 
 
+```
+create USER 'root'@'%' IDENTIFIED BY '123456';
+ALTER USER 'root'@'localhost' IDENTIFIED BY '123456';
+
+
+flush privileges;
+
+alter user 'root'@'%' identified with mysql_native_password by '123456';
+
+
+
+
+change master to 
+master_host='192.167.11.2',
+master_port=3309,
+master_user='repl',
+master_password='123456',
+master_log_file='mysql-bin.000001',
+master_log_pos=156,
+get_master_public_key=1
+;
+
+create table if not exists user 
+(
+  id bigint(20) not null auto_increment,
+  name varchar(255)      default '',
+  age int(11)      not null     default 0,
+  sex tinyint(3)      not null     default '0',
+ phone varchar(45)    not null  default '',
+ primary key (id)
+) engine=InnoDB auto_increment=3
+default charset=utf8;
+
+#授权 给root用户
+grant all privileges on *.* to 'root'@'%' with grant option; 
+```
+
+进行主从延迟测试
+create user 'pt_checksum'@'%' identified by '123456';
+
+GRANT SELECT, PROCESS, SUPER, REPLICATION SLAVE ON *.* TO 'pt_checksum'@'%' with grant option;
+
+grant all privileges on test.* to pt_checksum@'%';   
+
+
+pt-heartbeat h='10.246.131.14',u='pt_checksum',p='123456',P=30306 -D  test --create-table --interval=1 --update --replace --daemonize
+# ps -ef|grep heartbeat
+```
+👉👉👉➡️ ➡️ ➡️  ps -ef|grep heartbeat
+xfhuang  1564643   36298  0 16:11 ?        00:00:01 perl /usr/bin/site_perl/pt-heartbeat h=127.0.0.1,u=pt_checksum,p=123456,P=3309 -D test --create-table --interval=1 --update --replace --daemonize
+xfhuang  1640242  620527  0 16:31 pts/15   00:00:00 grep heartbeat
+```
+
+
+pt-heartbeat h='10.246.131.14',u='pt_checksum',p='123456',P=30306 -D test --table=heartbeat --monitor --master-server-id=100 --frames=1m,2m,3m,4m
+```
+👉👉👉➡️ ➡️ ➡️  pt-heartbeat h='127.0.0.1',u='pt_checksum',p='123456',P=3309 -D test --table=heartbeat --monitor --master-server-id=100
+```
